@@ -1,5 +1,7 @@
 package com.polarbookshop.edgeservice.config;
 
+import org.springframework.security.oauth2.client.web.server.ServerOAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.client.web.server.WebSessionServerOAuth2AuthorizedClientRepository;
 import reactor.core.publisher.Mono;
 
 import org.springframework.context.annotation.Bean;
@@ -20,6 +22,11 @@ import org.springframework.web.server.WebFilter;
 
 @Configuration(proxyBeanMethods = false)
 public class SecurityConfig {
+
+    @Bean
+    ServerOAuth2AuthorizedClientRepository authorizedClientRepository() {
+        return new WebSessionServerOAuth2AuthorizedClientRepository();
+    }
 
     @Bean
     SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http, ReactiveClientRegistrationRepository clientRegistrationRepository) {
