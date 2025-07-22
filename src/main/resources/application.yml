@@ -13,17 +13,28 @@ spring:
   config:
     import: "optional:configserver:"
   cloud:
+    config:
+      uri: http://localhost:8888
+      request-connect-timeout: 5000 # 5s
+      request-read-timeout: 5000 # 5s
+      fail-fast: false # In production, set to true
+      retry:
+        max-attempts: 6
+        initial-interval: 1000 # 1s
+        max-interval: 2000 # 2s
+        multiplier: 1.1
     gateway:
       httpclient:
         connect-timeout: 2000 # 2s
-        response-timeout: 5000 # 5s
+        response-timeout: 5s
+        wiretap: true
         pool:
           type: elastic
           max-idle-time: 15s
           max-life-time: 60s
       default-filters:
         - SaveSession
-        - TokenRelay
+        - TokenRelay=
         - name: RequestRateLimiter
           args:
             redis-rate-limiter:
@@ -34,13 +45,13 @@ spring:
           args:
             retries: 3
             methods: GET
-            statuses: SERVER_ERROR
+            series: SERVER_ERROR
             exceptions: java.io.IOException, java.util.concurrent.TimeoutException
             backoff:
               firstBackoff: 50ms
-              maxBackoff: 500ms
+              maxBackOff: 500ms
               factor: 2
-              basedOnPreviousValue: true
+              basedOnPreviousValue: false
       routes:
         - id: spa-route
           uri: ${SPA_URL:http://localhost:9004}
@@ -79,9 +90,11 @@ spring:
       client:
         registration:
           keycloak:
+            provider: keycloak
+            authorization-grant-type: authorization_code
             client-id: edge-service
             client-secret: polar-keycloak-secret
-            scope: openid,roles
+            scope: openid,profile,email,roles
         provider:
           keycloak:
             issuer-uri: http://localhost:8080/realms/PolarBookshop
@@ -93,12 +106,15 @@ resilience4j:
         slidingWindowSize: 20
         permittedNumberOfCallsInHalfOpenState: 5
         failureRateThreshold: 50
-        waitDurationInOpenState: 15000 # 15s
+        waitDurationInOpenState: 15000
   timelimiter:
     configs:
       default:
         timeoutDuration: 5s
 
-#logging:
-#  level:
-#    io.github.resilience4j: DEBUG
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.http.server.reactive: DEBUG
+    org.springframework.web.reactive: DEBUG
